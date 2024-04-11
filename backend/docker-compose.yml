@@ -1,0 +1,48 @@
+version: "3.9"
+services:
+  webserver:
+    container_name: INTARO-PHP-webServer
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./app:/var/www/html
+    ports:
+      - 80:80
+    depends_on:
+      - postgres-db
+    networks:
+      INTARO_network:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  postgres-db:
+    image: postgres:15.3-alpine3.17
+    container_name: INTARO-postgres-15
+    command:
+      - "postgres"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: user
+      POSTGRES_DB: intaro-2024
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - ./postgres:/docker-entrypoint-initdb.d
+      - postgresdb-data:/var/lib/postgresql/data
+      - ./postgres:/dump
+    ports:
+      - "5433:5432"
+    networks:
+      INTARO_network:
+
+volumes:
+  postgresdb-data:
+
+networks:
+  INTARO_network:
+    driver: bridge
+    name: INTARO_network
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.32.0.0/25
