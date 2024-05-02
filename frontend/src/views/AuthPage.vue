@@ -58,12 +58,20 @@
           <FormMessage />
         </FormItem>
       </FormField>
-
+      <Toaster />
       <Button type="submit"> Отправить </Button>
     </form>
-    <div v-else>
+
+    <div class="flex flex-col items-start pl-2 pt-2 border-2 w-[400px] h-[200px]" v-else>
+      <h1 class="font-semibold mb-4">Сообщение успешно отправлено</h1>
       <p class="text-gray-400">
-        ФИО пользователя: <span class="text-black">{{ fioValue }}</span>
+        Фамилия: <span class="text-black">{{ lastNameValue }}</span>
+      </p>
+      <p class="text-gray-400">
+        Имя: <span class="text-black">{{ firstNameValue }}</span>
+      </p>
+      <p class="text-gray-400">
+        Отчество: <span class="text-black">{{ middleNameValue }}</span>
       </p>
       <p class="text-gray-400">
         Почта пользователя: <span class="text-black">{{ emailValue }}</span>
@@ -71,23 +79,19 @@
       <p class="text-gray-400">
         Телефон: <span class="text-black">{{ phoneValue }}</span>
       </p>
-      <p class="text-gray-400">
-        Комментарий: <span class="text-black">{{ textValue }}</span>
-      </p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { h } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import * as z from 'zod'
 import { Textarea } from '@/components/ui/textarea'
 import { ref } from 'vue'
 import { Terminal } from 'lucide-vue-next'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-
+import { useToast } from '@/components/ui/toast/use-toast'
+import { Toaster } from '@/components/ui/toast'
 import { Button } from '@/components/ui/button'
 import {
   FormControl,
@@ -98,6 +102,7 @@ import {
   FormMessage
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import axios from 'axios'
 
 const formSchema = toTypedSchema(
   z.object({
@@ -123,6 +128,9 @@ const formSchema = toTypedSchema(
 
 let phoneValue = ref('')
 let fioValue = ref('')
+let middleNameValue = ref('')
+let firstNameValue = ref('')
+let lastNameValue = ref('')
 let emailValue = ref('')
 let textValue = ref('')
 
@@ -132,16 +140,62 @@ const { handleSubmit, errors } = useForm({
 
 let isVisible = ref(true)
 
-const onSubmit = handleSubmit((formData) => {
+const onSubmit = handleSubmit(async (formData) => {
   const data = formData
   console.log(data)
+
+  // Собираем данные
 
   phoneValue.value = data.phone
   fioValue.value = data.username
   emailValue.value = data.email
   textValue.value = data.textArea
 
-  isVisible.value = false
+  // Разделение на Фамилию имя и отчество
+
+  const fioParts = data.username.split(' ')
+
+  if (fioParts.length === 3) {
+    lastNameValue.value = fioParts[0] // Фамилия
+    firstNameValue.value = fioParts[1] // Имя
+    middleNameValue.value = fioParts[2] // Отчество
+  }
+
+  console.log(data)
+
+  // Готовим POST запрос
+
+  const userData = new FormData()
+  userData.append('fio', data.username)
+  userData.append('email', data.email)
+  userData.append('phone', data.phone)
+  userData.append('text_message', data.textArea)
+
+  try {
+    const response = await axios.post('http://localhost/lab3/API-POST-DATA.php', userData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    console.log('Ответ от сервера:', response.data)
+
+    const { toast } = useToast()
+
+    let interval = Math.round(response.data.interval)
+
+    if (response.data.status == 'No') {
+      console.log(interval)
+      toast({
+        description: `Сообщение можно отправить раз в 1.5 часа. Осталось ${interval} минут(ы)`,
+        variant: 'destructive'
+      })
+    } else if (response.data.status == 'Yes') {
+      isVisible.value = false
+    }
+  } catch (error) {
+    console.error('Ошибка при отправке данных:', error)
+  }
 })
 </script>
 
