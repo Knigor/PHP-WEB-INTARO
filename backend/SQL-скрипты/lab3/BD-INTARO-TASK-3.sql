@@ -299,7 +299,8 @@ INSERT INTO orders (created_at, customer_id, manager_id, status_id, is_paid, tot
     ('2024-02-05', 2, 2, 1, true, 200.00, 'Google'),
     ('2024-02-10', 2, 2, 1, true, 250.00, 'Facebook');
 
--- Предположим также, что у всех заказов есть по крайней мере один визит
+
+   
 INSERT INTO visits (customer_id, visit_time) VALUES
     (1, '2024-01-01 10:00:00'),
     (1, '2024-01-06 10:00:00'),
